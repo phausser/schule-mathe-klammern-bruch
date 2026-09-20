@@ -2,7 +2,7 @@
 
 ## Setup
 - [x] Projektgerüst anlegen: `index.html`, `style.css`, `app.js`, `fraction.js`, `tasks.js`
-- [ ] `.gitignore` (falls nötig), `README.md` mit Kurzbeschreibung & Link zu GitHub Pages
+- [x] `README.md` mit Kurzbeschreibung
 
 ## Kern-Bausteine
 - [x] `fraction.js`: Fraction-Klasse (add, sub, mul, gcd/kürzen, toString, fromString-Parser, exakter Vergleich)
