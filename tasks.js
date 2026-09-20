@@ -38,9 +38,38 @@ function fmt(f) {
   return formatFraction(f);
 }
 
-function signedStr(f) {
-  // Erwartet f evtl. negativ; liefert " + 3" oder " - 3" fürs Anhängen.
-  return f.num < 0 ? ` - ${fmt(f.neg())}` : ` + ${fmt(f)}`;
+/**
+ * Erzwingt Bruchschreibweise (a/b bzw. nur a bei ganzen Zahlen), auch wenn der
+ * Nenner "zufällig" dezimal darstellbar wäre (z. B. 20). Für Aufgaben, die
+ * bewusst mit Brüchen arbeiten – sonst würde z. B. 29/40 als 0.725
+ * angezeigt und die Bruch-/Dezimal-Schreibweisen würden wild gemischt.
+ */
+function fmtFrac(f) {
+  return f.den === 1 ? String(f.num) : `${f.num}/${f.den}`;
+}
+
+/**
+ * Liefert zwei (vorzeichenbehaftete) Brüche über dem Nenner `den`, deren Summe
+ * exakt die ganze Zahl k ergibt (k aus [kMin, kMax]). Das ist der "Trick" hinter
+ * geschicktem Klammernsetzen: eine Teilsumme wird überraschend glatt.
+ */
+function niceFractionPair(den, kMin, kMax) {
+  const k = randInt(kMin, kMax);
+  const numA = randInt(1, 3 * den) * choice([1, -1]);
+  const a = new Fraction(numA, den);
+  const b = new Fraction(k, 1).sub(a);
+  return [a, b];
+}
+
+/**
+ * Wie niceFractionPair, aber für Dezimalzahlen (z. B. 3,82 + 0,18 = 4).
+ */
+function niceDecimalPair(decimals, kMin, kMax) {
+  const k = randInt(kMin, kMax);
+  const magnitude = randDecFraction(0.1, 12, decimals);
+  const a = choice([1, -1]) === 1 ? magnitude : magnitude.neg();
+  const b = new Fraction(k, 1).sub(a);
+  return [a, b];
 }
 
 // ---------------------------------------------------------------------
@@ -48,6 +77,7 @@ function signedStr(f) {
 // ---------------------------------------------------------------------
 function generateTypeA() {
   const mode = choice(['frac', 'dec']);
+  const fmtTerm = mode === 'frac' ? fmtFrac : fmt;
   const a = randInt(2, 9);
   const op = choice(['-', '+']);
 
@@ -59,12 +89,19 @@ function generateTypeA() {
     if (n1 === n2) n2 = n2 === 1 ? n2 + 1 : n2 - 1;
     b = new Fraction(n1, den);
     c = new Fraction(n2, den);
-    prompt = `${a} · ${fmt(b)} ${op} ${a} · ${fmt(c)}`;
+    prompt = `${a} · ${fmtTerm(b)} ${op} ${a} · ${fmtTerm(c)}`;
   } else {
-    b = randDecFraction(0.1, 15, 1);
-    c = randDecFraction(0.1, 15, 1);
-    if (b.equals(c)) c = c.add(new Fraction(1, 10));
-    prompt = `${a} · ${fmt(b)} ${op} ${a} · ${fmt(c)}`;
+    // b und c so wählen, dass b op c eine glatte ganze Zahl ergibt
+    // (wie im Aufgabenblatt: 1,4 + 1,6 = 3, 2,3 − 0,3 = 2).
+    c = randDecFraction(0.1, 9.9, 1);
+    const whole = randInt(1, 9);
+    if (op === '-') {
+      b = c.add(new Fraction(whole, 1));
+    } else {
+      const target = new Fraction(Math.ceil(c.toNumber()) + whole, 1);
+      b = target.sub(c);
+    }
+    prompt = `${a} · ${fmtTerm(b)} ${op} ${a} · ${fmtTerm(c)}`;
   }
 
   const aFrac = new Fraction(a, 1);
@@ -75,7 +112,7 @@ function generateTypeA() {
     kind: 'input',
     prompt: `Klammere aus und berechne:\n${prompt}`,
     answer,
-    hint: `Ausklammern: ${a} · (${fmt(b)} ${op} ${fmt(c)})`,
+    hint: `Ausklammern: ${a} · (${fmtTerm(b)} ${op} ${fmtTerm(c)})`,
   };
 }
 
@@ -83,42 +120,65 @@ function generateTypeA() {
 // Typ B: Geschickt berechnen
 // ---------------------------------------------------------------------
 function tplFractionFactorTwoInts() {
+  // x und y so wählen, dass x op y ein Vielfaches des Nenners ist – dann kürzt
+  // sich der Bruch beim Ausklammern glatt weg (wie 5/6·90 − 5/6·84 = 5/6·6 = 5).
   const den = choice(DENOMS);
   const p = randInt(1, den - 1);
-  const x = randInt(10, 99);
-  const y = randInt(10, 99);
   const coeff = new Fraction(p, den);
   const op = choice(['-', '+']);
-  const prompt = `${fmt(coeff)} · ${x} ${op} ${fmt(coeff)} · ${y}`;
+  const y = randInt(10, 60);
+  const kMax = Math.max(2, Math.min(8, Math.floor(60 / den)));
+  const k = randInt(2, kMax);
+  let x;
+  if (op === '-') {
+    x = y + k * den;
+  } else {
+    x = k * den - y;
+    while (x < 10) x += den;
+  }
+  const prompt = `${fmtFrac(coeff)} · ${x} ${op} ${fmtFrac(coeff)} · ${y}`;
   const inner = op === '-' ? x - y : x + y;
   const answer = coeff.mul(new Fraction(inner, 1));
   return { prompt, answer };
 }
 
 function tplFractionTimesSum() {
+  // n1, n2 so wählen, dass n1 op n2 ein Vielfaches von innerDen ist – die
+  // Klammer wird dann zu einer kleinen ganzen Zahl (wie 4/3·(9/20+11/20)=4/3·1).
   const outerDen = choice(DENOMS);
   const p = randInt(1, outerDen - 1);
   const coeff = new Fraction(p, outerDen);
   const innerDen = choice(DENOMS);
-  const n1 = randInt(1, 2 * innerDen);
-  const n2 = randInt(1, 2 * innerDen);
   const op = choice(['+', '-']);
+  const n2 = randInt(1, 2 * innerDen);
+  const k = randInt(1, 3);
+  let n1;
+  if (op === '+') {
+    n1 = k * innerDen - n2;
+    while (n1 < 1) n1 += innerDen;
+  } else {
+    n1 = n2 + k * innerDen;
+  }
   const b = new Fraction(n1, innerDen);
   const c = new Fraction(n2, innerDen);
-  const prompt = `${fmt(coeff)} · (${fmt(b)} ${op} ${fmt(c)})`;
+  const prompt = `${fmtFrac(coeff)} · (${fmtFrac(b)} ${op} ${fmtFrac(c)})`;
   const inner = op === '-' ? b.sub(c) : b.add(c);
   const answer = coeff.mul(inner);
   return { prompt, answer };
 }
 
 function tplNegFractionsCommonFactor() {
+  // p + r als Vielfaches von den wählen, damit sich die Brüche beim
+  // Ausklammern zu einer ganzen Zahl addieren (wie -19/40 - 21/40 = -1).
   const den = choice(DENOMS);
-  const p = randInt(1, den - 1);
   const r = randInt(1, den - 1);
+  const m = randInt(1, 2);
+  let p = m * den - r;
+  while (p < 1) p += den;
   const k = randInt(2, 40);
   const coeff1 = new Fraction(p, den);
   const coeff2 = new Fraction(r, den);
-  const prompt = `-${fmt(coeff1)} · ${k} - ${fmt(coeff2)} · ${k}`;
+  const prompt = `-${fmtFrac(coeff1)} · ${k} - ${fmtFrac(coeff2)} · ${k}`;
   const answer = coeff1.neg().mul(new Fraction(k, 1)).sub(coeff2.mul(new Fraction(k, 1)));
   return { prompt, answer };
 }
@@ -129,18 +189,26 @@ function tplHundredTimesSum() {
   const dec = randDecFraction(0.1, 5, 1);
   const op = choice(['+', '-']);
   const frac = new Fraction(num, k);
-  const prompt = `${k} · (${fmt(frac)} ${op} ${fmt(dec)})`;
+  const prompt = `${k} · (${fmtFrac(frac)} ${op} ${fmt(dec)})`;
   const inner = op === '-' ? frac.sub(dec) : frac.add(dec);
   const answer = new Fraction(k, 1).mul(inner);
   return { prompt, answer };
 }
 
 function tplIntTimesDecDiff() {
+  // d1 op d2 so konstruieren, dass eine glatte ganze Zahl herauskommt
+  // (wie 4·(5,3 − 1,3) = 4·4).
   const a = randInt(2, 9);
-  const d1 = randDecFraction(1, 20, 1);
-  let d2 = randDecFraction(0.1, 10, 1);
-  if (d2.toNumber() >= d1.toNumber()) d2 = randDecFraction(0.1, Math.max(0.2, d1.toNumber() - 0.1), 1);
   const op = choice(['-', '+']);
+  const d2 = randDecFraction(0.1, 9.9, 1);
+  const whole = randInt(1, 9);
+  let d1;
+  if (op === '-') {
+    d1 = d2.add(new Fraction(whole, 1));
+  } else {
+    const target = new Fraction(Math.ceil(d2.toNumber()) + whole, 1);
+    d1 = target.sub(d2);
+  }
   const prompt = `${a} · (${fmt(d1)} ${op} ${fmt(d2)})`;
   const inner = op === '-' ? d1.sub(d2) : d1.add(d2);
   const answer = new Fraction(a, 1).mul(inner);
@@ -148,10 +216,19 @@ function tplIntTimesDecDiff() {
 }
 
 function tplReverseDistribute() {
+  // x op y auf ein Vielfaches von 10 bringen, damit das Endergebnis rund wird
+  // (wie 3·0,75 + 7·0,75 = 10·0,75).
   const d = randDecFraction(0.1, 3, 2);
-  const x = randInt(2, 20);
-  const y = randInt(2, 20);
   const op = choice(['+', '-']);
+  const y = randInt(2, 15);
+  const roundTarget = choice([10, 20]);
+  let x;
+  if (op === '+') {
+    x = roundTarget - y;
+    if (x < 2) x += roundTarget;
+  } else {
+    x = y + roundTarget;
+  }
   const prompt = `${x} · ${fmt(d)} ${op} ${y} · ${fmt(d)}`;
   const inner = op === '-' ? x - y : x + y;
   const answer = d.mul(new Fraction(inner, 1));
@@ -191,48 +268,71 @@ function generateTypeB() {
 // ---------------------------------------------------------------------
 // Typ C: Klammern setzen & berechnen (Summe/Differenz mehrerer Terme)
 // ---------------------------------------------------------------------
+// Wichtig: "geschicktes Klammernsetzen" lohnt sich nur, wenn irgendwo zwei
+// Terme stecken, die sich besonders leicht zusammenfassen lassen (gleicher
+// Nenner bzw. eine glatte ganze Zahl als Teilsumme) – sonst ist jede
+// Reihenfolge gleich mühsam. Deshalb bauen wir immer genau so ein Paar ein
+// und mischen es unter zufällig platzierte, unabhängige "Füll"-Terme.
 function generateTypeC() {
   const mode = choice(['frac', 'dec']);
+  const fmtTerm = mode === 'frac' ? fmtFrac : fmt;
   const termCount = choice([3, 3, 4]);
+  const contributions = [];
 
-  const terms = [];
   if (mode === 'frac') {
     const commonDen = choice(DENOMS);
+    const [pairA, pairB] = niceFractionPair(commonDen, -3, 4);
+    contributions.push(pairA, pairB);
+
     const otherDen = choice(DENOMS.filter((d) => d !== commonDen));
-    terms.push(randFraction(2 * commonDen, commonDen));
-    terms.push(randFraction(2 * commonDen, commonDen));
-    terms.push(randFraction(2 * otherDen, otherDen));
+    const filler = randFraction(2 * otherDen, otherDen);
+    contributions.push(choice([1, -1]) === 1 ? filler : filler.neg());
+
     if (termCount === 4) {
-      terms.push(new Fraction(randInt(1, 5), 1));
+      if (choice([true, false])) {
+        contributions.push(new Fraction(randInt(1, 6) * choice([1, -1]), 1));
+      } else {
+        const remainingDens = DENOMS.filter((d) => d !== commonDen && d !== otherDen);
+        const den2 = choice(remainingDens);
+        const filler2 = randFraction(2 * den2, den2);
+        contributions.push(choice([1, -1]) === 1 ? filler2 : filler2.neg());
+      }
     }
   } else {
-    for (let i = 0; i < termCount; i++) {
-      terms.push(randDecFraction(0.1, 10, choice([1, 2])));
+    const decimals = choice([1, 2]);
+    const [pairA, pairB] = niceDecimalPair(decimals, -6, 12);
+    contributions.push(pairA, pairB);
+
+    for (let i = 2; i < termCount; i++) {
+      const filler = randDecFraction(0.1, 10, choice([1, 2]));
+      contributions.push(choice([1, -1]) === 1 ? filler : filler.neg());
     }
   }
 
-  const signs = terms.map((_, i) => (i === 0 ? 1 : choice([1, -1])));
-  const shuffledOrder = shuffle(terms.map((_, i) => i));
-
-  let promptParts = [];
+  const order = shuffle(contributions.map((_, i) => i));
+  const promptParts = [];
   let answer = new Fraction(0, 1);
-  shuffledOrder.forEach((idx, pos) => {
-    const term = terms[idx];
-    const s = signs[idx];
-    const value = s === 1 ? term : term.neg();
-    answer = answer.add(value);
+  order.forEach((idx, pos) => {
+    const c = contributions[idx];
+    answer = answer.add(c);
+    const magStr = fmtTerm(c.num < 0 ? c.neg() : c);
     if (pos === 0) {
-      promptParts.push(s === 1 ? fmt(term) : `-${fmt(term)}`);
+      promptParts.push(c.num < 0 ? `-${magStr}` : magStr);
     } else {
-      promptParts.push(s === 1 ? `+ ${fmt(term)}` : `- ${fmt(term)}`);
+      promptParts.push(c.num < 0 ? `- ${magStr}` : `+ ${magStr}`);
     }
   });
+
+  const [pairA, pairB] = contributions;
+  const pairSum = pairA.add(pairB);
+  const pairBMagStr = fmtTerm(pairB.num < 0 ? pairB.neg() : pairB);
+  const pairOp = pairB.num < 0 ? '-' : '+';
 
   return {
     kind: 'input',
     prompt: `Setze geschickt Klammern und berechne:\n${promptParts.join(' ')}`,
     answer,
-    hint: 'Fasse Terme mit gleichem Nenner bzw. günstige Dezimalzahlen zuerst zusammen.',
+    hint: `Kombiniere zuerst ${fmtTerm(pairA)} ${pairOp} ${pairBMagStr} = ${fmtTerm(pairSum)}, der Rest ist dann einfach.`,
   };
 }
 
