@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Klammern &amp; Distributivgesetz – Mathe-Übung</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <section id="screen-start" class="screen">
+    <h1>Klammern &amp; Distributivgesetz</h1>
+    <p>
+      Löse <strong>10 Aufgaben in Folge</strong> richtig, um zu bestehen.
+      Bei einem Fehler geht es wieder von vorne los. Es wird die Zeit gestoppt –
+      also nicht trödeln, aber vor allem: rechne sorgfältig!
+    </p>
+    <ul class="rules">
+      <li>Klammern ausrechnen &amp; ausklammern</li>
+      <li>Geschickt rechnen mit dem Distributivgesetz</li>
+      <li>Äquivalente Ausdrücke erkennen</li>
+      <li>Typische Stolperstellen vermeiden</li>
+    </ul>
+    <button id="btn-start" class="btn btn-primary">Start</button>
+  </section>
+
+  <section id="screen-game" class="screen" hidden>
+    <div class="hud">
+      <span id="progress">Aufgabe 1 / 10</span>
+      <span id="timer">00:00</span>
+    </div>
+    <div class="task-box">
+      <p id="task-instruction" class="task-instruction"></p>
+      <pre id="task-expr" class="task-expr"></pre>
+      <div id="task-input-area"></div>
+      <p id="inline-message" class="inline-message" hidden></p>
+      <button id="btn-check" class="btn btn-primary">Prüfen</button>
+    </div>
+  </section>
+
+  <section id="screen-error" class="screen" hidden>
+    <h1>Leider falsch 😅</h1>
+    <p id="error-solution" class="solution-box"></p>
+    <p>Kein Problem – neuer Versuch mit neuen Aufgaben!</p>
+    <button id="btn-restart" class="btn btn-primary">Neu starten</button>
+  </section>
+
+  <section id="screen-success" class="screen" hidden>
+    <h1>Bestanden! 🎉</h1>
+    <p>Du hast alle 10 Aufgaben richtig gelöst.</p>
+    <p class="time-result">Benötigte Zeit: <span id="final-time"></span></p>
+    <button id="btn-again" class="btn btn-primary">Nochmal spielen</button>
+  </section>
+
+</div>
+
+<script src="fraction.js"></script>
+<script src="tasks.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
