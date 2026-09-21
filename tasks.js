@@ -491,13 +491,19 @@ const TASK_GENERATORS = {
   E: generateTypeE,
 };
 
-function generateTask() {
-  const type = choice(Object.keys(TASK_GENERATORS));
-  return TASK_GENERATORS[type]();
+function generateTask(type) {
+  const key = type || choice(Object.keys(TASK_GENERATORS));
+  return TASK_GENERATORS[key]();
 }
 
+// Garantiert, dass jeder Durchlauf mindestens eine Aufgabe von jedem Typ
+// enthält (sonst kann Typ E "Stolperstelle" bei rein zufälliger Auswahl
+// gelegentlich einen ganzen Durchlauf lang gar nicht auftauchen).
 function generateTaskSet(n) {
-  return Array.from({ length: n }, generateTask);
+  const types = Object.keys(TASK_GENERATORS);
+  const guaranteed = types.map((type) => generateTask(type));
+  const extra = Array.from({ length: Math.max(0, n - types.length) }, () => generateTask());
+  return shuffle([...guaranteed, ...extra]).slice(0, n);
 }
 
 if (typeof module !== 'undefined' && module.exports) {
