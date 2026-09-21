@@ -387,21 +387,22 @@ function generateTypeD() {
 // ---------------------------------------------------------------------
 // Typ E: Stolperstelle / Fehlersuche (Multiple Choice, eine richtige Antwort)
 // ---------------------------------------------------------------------
-function makeOptions(correctValue, wrongValues) {
-  const seen = new Set([fmt(correctValue)]);
-  const uniqueWrongs = [];
-  for (const w of wrongValues) {
-    const key = fmt(w);
-    if (!seen.has(key)) {
-      seen.add(key);
-      uniqueWrongs.push(w);
+// Die Optionen sind vollständig vorgerechnete Fortsetzungszeilen (nicht nur
+// Endergebnisse) – Mehdis fehlerhafte Zeile ist immer als Distraktor dabei.
+// So muss man wirklich erkennen, WELCHE Vorzeichen falsch gesetzt wurden,
+// statt die Aufgabe einfach unabhängig neu zu berechnen.
+function buildCorrectionOptions(candidates) {
+  // candidates[0] muss die tatsächlich korrekte Fortsetzung sein.
+  const correctValue = candidates[0].value;
+  const seen = new Set();
+  const unique = [];
+  for (const cand of candidates) {
+    if (!seen.has(cand.label)) {
+      seen.add(cand.label);
+      unique.push(cand);
     }
   }
-  const pool = [correctValue, ...uniqueWrongs].slice(0, 4);
-  const options = shuffle(
-    pool.map((v) => ({ label: fmt(v), correct: v.equals(correctValue) }))
-  );
-  return options;
+  return shuffle(unique.map((cand) => ({ label: cand.label, correct: cand.value.equals(correctValue) })));
 }
 
 function errNegTimesMinus() {
@@ -411,15 +412,16 @@ function errNegTimesMinus() {
   const aF = new Fraction(a, 1);
   const bF = new Fraction(b, 1);
   const cF = new Fraction(c, 1);
-  const correct = aF.neg().mul(bF.sub(cF)); // -a·(b-c) = -a·b + a·c
-  const mistake = aF.neg().mul(bF).sub(aF.mul(cF)); // -a·b - a·c (Mehdis Fehler)
-  const wrongDropSign = aF.mul(bF).sub(aF.mul(cF));
-  const wrongBoth = aF.neg().mul(bF).sub(aF.neg().mul(cF)).neg();
+  const options = buildCorrectionOptions([
+    { label: `-${a} · ${b} + ${a} · ${c}`, value: aF.neg().mul(bF).add(aF.mul(cF)) }, // richtig
+    { label: `-${a} · ${b} - ${a} · ${c}`, value: aF.neg().mul(bF).sub(aF.mul(cF)) }, // Mehdis Fehler
+    { label: `${a} · ${b} - ${a} · ${c}`, value: aF.mul(bF).sub(aF.mul(cF)) },
+    { label: `${a} · ${b} + ${a} · ${c}`, value: aF.mul(bF).add(aF.mul(cF)) },
+  ]);
   return {
     statement: `Mehdi rechnet: -${a} · (${b} - ${c}) = -${a} · ${b} - ${a} · ${c}`,
-    question: `Wie lautet das richtige Ergebnis von -${a} · (${b} - ${c})?`,
-    options: makeOptions(correct, [mistake, wrongDropSign, wrongBoth]),
-    hint: `Beim Ausmultiplizieren mit -${a} ändern sich beide Vorzeichen: -${a} · (${b} - ${c}) = -${a} · ${b} + ${a} · ${c} = ${fmt(correct)}`,
+    options,
+    hint: `Beim Ausmultiplizieren mit -${a} ändern sich beide Vorzeichen in der Klammer: -${a} · (${b} - ${c}) = -${a} · ${b} + ${a} · ${c}`,
   };
 }
 
@@ -430,15 +432,16 @@ function errDoubleMinusBracket() {
   const pF = new Fraction(p, 1);
   const qF = new Fraction(q, 1);
   const rF = new Fraction(r, 1);
-  const correct = pF.sub(qF.neg().sub(rF)); // p - (-q - r) = p + q + r
-  const mistake = pF.sub(qF).add(rF); // p - q + r (Mehdis Fehler)
-  const wrong2 = pF.sub(qF).sub(rF);
-  const wrong3 = pF.add(qF).sub(rF);
+  const options = buildCorrectionOptions([
+    { label: `${p} + ${q} + ${r}`, value: pF.add(qF).add(rF) }, // richtig
+    { label: `${p} - ${q} + ${r}`, value: pF.sub(qF).add(rF) }, // Mehdis Fehler
+    { label: `${p} - ${q} - ${r}`, value: pF.sub(qF).sub(rF) },
+    { label: `${p} + ${q} - ${r}`, value: pF.add(qF).sub(rF) },
+  ]);
   return {
     statement: `Mehdi rechnet: ${p} - (-${q} - ${r}) = ${p} - ${q} + ${r}`,
-    question: `Wie lautet das richtige Ergebnis von ${p} - (-${q} - ${r})?`,
-    options: makeOptions(correct, [mistake, wrong2, wrong3]),
-    hint: `Ein Minus vor der Klammer dreht JEDES Vorzeichen in der Klammer um: ${p} - (-${q} - ${r}) = ${p} + ${q} + ${r} = ${fmt(correct)}`,
+    options,
+    hint: `Ein Minus vor der Klammer dreht JEDES Vorzeichen in der Klammer um: ${p} - (-${q} - ${r}) = ${p} + ${q} + ${r}`,
   };
 }
 
@@ -449,15 +452,16 @@ function errNegTimesPlus() {
   const aF = new Fraction(a, 1);
   const bF = new Fraction(b, 1);
   const cF = new Fraction(c, 1);
-  const correct = aF.neg().mul(bF.add(cF)); // -a·(b+c) = -a·b - a·c
-  const mistake = aF.neg().mul(bF).add(aF.mul(cF)); // -a·b + a·c (Mehdis Fehler)
-  const wrong2 = aF.mul(bF).add(aF.mul(cF));
-  const wrong3 = aF.mul(bF).sub(aF.mul(cF));
+  const options = buildCorrectionOptions([
+    { label: `-${a} · ${b} - ${a} · ${c}`, value: aF.neg().mul(bF).sub(aF.mul(cF)) }, // richtig
+    { label: `-${a} · ${b} + ${a} · ${c}`, value: aF.neg().mul(bF).add(aF.mul(cF)) }, // Mehdis Fehler
+    { label: `${a} · ${b} + ${a} · ${c}`, value: aF.mul(bF).add(aF.mul(cF)) },
+    { label: `${a} · ${b} - ${a} · ${c}`, value: aF.mul(bF).sub(aF.mul(cF)) },
+  ]);
   return {
     statement: `Mehdi rechnet: -${a} · (${b} + ${c}) = -${a} · ${b} + ${a} · ${c}`,
-    question: `Wie lautet das richtige Ergebnis von -${a} · (${b} + ${c})?`,
-    options: makeOptions(correct, [mistake, wrong2, wrong3]),
-    hint: `Beim Ausmultiplizieren mit -${a} bleibt das Vorzeichen von + gleich, wird also zu -: -${a} · (${b} + ${c}) = -${a} · ${b} - ${a} · ${c} = ${fmt(correct)}`,
+    options,
+    hint: `Beim Ausmultiplizieren mit -${a} bleibt das Vorzeichen von + bei + und wird zu -: -${a} · (${b} + ${c}) = -${a} · ${b} - ${a} · ${c}`,
   };
 }
 
@@ -465,12 +469,12 @@ const TYPE_E_GENERATORS = [errNegTimesMinus, errDoubleMinusBracket, errNegTimesP
 
 function generateTypeE() {
   const gen = choice(TYPE_E_GENERATORS);
-  const { statement, question, options, hint } = gen();
+  const { statement, options, hint } = gen();
   const correctCount = options.filter((o) => o.correct).length;
   if (correctCount !== 1 || options.length < 2) return generateTypeE();
   return {
     kind: 'choice',
-    prompt: `Stolperstelle: ${statement}\n${question}`,
+    prompt: `Stolperstelle: Welche Fortsetzung korrigiert Mehdis Fehler richtig?\n${statement}`,
     options,
     hint,
   };
