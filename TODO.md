@@ -42,6 +42,13 @@
 - [ ] Edge Cases weiter beobachten: negative Ergebnisse, Bruch kürzen, Eingabe mit Komma, 0 als Ergebnis
 - [ ] Cross-Check: Aufgaben aus SPEC.md (Beispielaufgaben 9a–h, 12a–h, 13a–f) manuell nachrechnen lassen
 
+## Pep-Elemente
+- [x] Feedback-Animationen (Puls bei richtig, Shake bei falsch) inkl. kurzer Eingabesperre
+- [x] Konfetti auf dem Erfolgs-Screen
+- [x] Streak-Badge ("🔥 Serie: N") ab 3 richtigen Antworten in Folge
+- [x] Wechselnde Ermutigungssprüche nach richtiger Antwort
+- [x] Bestzeit lokal merken (localStorage) und beim Bestehen vergleichen
+
 ## Deployment
 - [ ] GitHub Pages Konfiguration prüfen/einrichten (Settings → Pages, Branch/Ordner)
-- [x] Commits & Push auf `claude/math-learning-app-ry5x8b`
+- [x] Commits & Push auf `main`

@@ -72,6 +72,11 @@ p {
   transform: scale(0.97);
 }
 
+.btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .btn-primary {
   background: var(--color-primary);
   color: #fff;
@@ -84,14 +89,64 @@ p {
 .hud {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-weight: 600;
   color: var(--color-muted);
   margin-bottom: 20px;
   font-variant-numeric: tabular-nums;
 }
 
+.hud-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.streak-badge {
+  background: #fff1e0;
+  color: #c65a00;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.85rem;
+}
+
 .task-box {
   text-align: left;
+  border-radius: 10px;
+  transition: box-shadow 0.15s ease;
+}
+
+.task-box.flash-correct {
+  animation: pulseGreen 0.55s ease;
+}
+
+.task-box.flash-wrong {
+  animation: shake 0.45s ease;
+}
+
+@keyframes pulseGreen {
+  0% { box-shadow: 0 0 0 0 rgba(30, 142, 90, 0); }
+  30% { box-shadow: 0 0 0 6px rgba(30, 142, 90, 0.18); }
+  100% { box-shadow: 0 0 0 0 rgba(30, 142, 90, 0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(4px); }
+}
+
+.praise-toast {
+  font-weight: 600;
+  color: var(--color-success);
+  margin: -4px 0 12px;
+}
+
+#task-input-area.disabled {
+  pointer-events: none;
+  opacity: 0.7;
 }
 
 .task-instruction {
@@ -184,8 +239,52 @@ p {
   color: var(--color-success);
 }
 
+.best-time-note {
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
+
+.best-time-note--record {
+  color: #b8860b;
+  font-weight: 700;
+}
+
 #screen-game .task-box .btn {
   width: 100%;
+}
+
+#screen-success {
+  position: relative;
+  overflow: hidden;
+}
+
+#confetti-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -14px;
+  width: 8px;
+  height: 14px;
+  opacity: 0.9;
+  animation-name: confettiFall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(480px) rotate(360deg);
+    opacity: 0;
+  }
 }
 
 @media (max-width: 480px) {

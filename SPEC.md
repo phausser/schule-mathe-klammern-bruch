@@ -89,8 +89,22 @@ zufälligen Zahlen neu instanziert).
    inline, kein Blocken).
 3. **Fehler-Screen** (bei falscher Antwort): zeigt kurz die korrekte
    Lösung, Button "Neu starten" → zurück zu Aufgabe 1 mit neuem Satz.
-4. **Erfolgs-Screen**: "Bestanden!", benötigte Zeit, Button
-   "Nochmal spielen".
+4. **Erfolgs-Screen**: "Bestanden!", benötigte Zeit, Bestzeit-Vergleich,
+   Konfetti, Button "Nochmal spielen".
+
+## Pep-Elemente
+
+- **Feedback-Animationen**: kurzer grüner Puls bei richtiger, Shake bei
+  falscher Antwort (auf der Aufgaben-Box), mit kurzer Verzögerung bevor es
+  weitergeht – Eingabe/Optionen sind währenddessen kurz gesperrt.
+- **Konfetti** auf dem Erfolgs-Screen (reines CSS/JS, keine Bilder/Libs).
+- **Streak-Badge** ("🔥 Serie: N") in der HUD-Zeile, sobald 3 oder mehr
+  Aufgaben am Stück richtig gelöst wurden.
+- **Ermutigungssprüche**: wechselnder, locker-motivierender Kurzspruch
+  nach jeder richtigen Antwort (z. B. "Stark!", "Läuft bei dir!").
+- **Bestzeit**: wird lokal im Browser gemerkt (`localStorage`) und beim
+  Bestehen mit der aktuellen Zeit verglichen ("🏆 Neue Bestzeit!" bzw.
+  Anzeige der bisherigen Bestzeit).
 
 ## Technik
 
@@ -107,7 +121,9 @@ zufälligen Zahlen neu instanziert).
 
 ## Nicht im Scope (v1)
 
-- Keine Nutzerkonten, kein Speichern von Highscores/Historie.
+- Keine Nutzerkonten, kein serverseitiges Speichern von Highscores/Historie
+  (nur eine lokale Bestzeit im Browser des jeweiligen Geräts, siehe
+  "Pep-Elemente").
 - Kein Server, keine Analytics.
 - Keine Barrierefreiheits-Zertifizierung, aber grundlegende Semantik
   (Labels, Kontraste) wird beachtet.

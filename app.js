@@ -1,6 +1,23 @@
 'use strict';
 
 const TOTAL_TASKS = 10;
+const BEST_TIME_KEY = 'klammern-bruch:bestzeit-ms';
+const CORRECT_DELAY_MS = 550;
+const WRONG_DELAY_MS = 450;
+const STREAK_THRESHOLD = 3;
+
+const PRAISE_MESSAGES = [
+  'Stark!',
+  'Läuft bei dir!',
+  'Sauber gerechnet!',
+  'Nice!',
+  'Genau richtig!',
+  'Weiter so!',
+  'Punktlandung!',
+  'Bleib dran!',
+  'Sitzt!',
+  'Sehr gut!',
+];
 
 const screens = {
   start: document.getElementById('screen-start'),
@@ -10,14 +27,19 @@ const screens = {
 };
 
 const progressEl = document.getElementById('progress');
+const streakBadgeEl = document.getElementById('streak-badge');
 const timerEl = document.getElementById('timer');
+const taskBoxEl = document.querySelector('.task-box');
 const instructionEl = document.getElementById('task-instruction');
 const exprEl = document.getElementById('task-expr');
 const inputAreaEl = document.getElementById('task-input-area');
 const inlineMessageEl = document.getElementById('inline-message');
+const praiseToastEl = document.getElementById('praise-toast');
 const checkBtn = document.getElementById('btn-check');
 const errorSolutionEl = document.getElementById('error-solution');
 const finalTimeEl = document.getElementById('final-time');
+const bestTimeNoteEl = document.getElementById('best-time-note');
+const confettiContainerEl = document.getElementById('confetti-container');
 
 let state = {
   tasks: [],
@@ -58,6 +80,8 @@ function stopTimer() {
 function startGame() {
   state.tasks = generateTaskSet(TOTAL_TASKS);
   state.currentIndex = 0;
+  confettiContainerEl.innerHTML = '';
+  streakBadgeEl.hidden = true;
   showScreen('game');
   startTimer();
   renderTask();
@@ -73,8 +97,33 @@ function showInlineMessage(text) {
   inlineMessageEl.hidden = false;
 }
 
+function clearPraiseToast() {
+  praiseToastEl.hidden = true;
+  praiseToastEl.textContent = '';
+}
+
+function showPraiseToast() {
+  praiseToastEl.textContent = choice(PRAISE_MESSAGES);
+  praiseToastEl.hidden = false;
+}
+
+function updateStreakBadge(streak) {
+  if (streak >= STREAK_THRESHOLD) {
+    streakBadgeEl.textContent = `🔥 Serie: ${streak}`;
+    streakBadgeEl.hidden = false;
+  }
+}
+
+function setControlsEnabled(enabled) {
+  checkBtn.disabled = !enabled;
+  inputAreaEl.classList.toggle('disabled', !enabled);
+}
+
 function renderTask() {
   clearInlineMessage();
+  clearPraiseToast();
+  setControlsEnabled(true);
+  if (state.currentIndex === 0) streakBadgeEl.hidden = true;
   const task = state.tasks[state.currentIndex];
   state.selection = task.kind === 'multi' ? new Set() : null;
 
@@ -179,15 +228,27 @@ function checkAnswer() {
 }
 
 function handleResult(isCorrect, task, correctText) {
+  setControlsEnabled(false);
   if (isCorrect) {
-    if (state.currentIndex + 1 >= TOTAL_TASKS) {
-      finishGame();
-    } else {
-      state.currentIndex++;
-      renderTask();
-    }
+    const streak = state.currentIndex + 1;
+    taskBoxEl.classList.add('flash-correct');
+    showPraiseToast();
+    updateStreakBadge(streak);
+    setTimeout(() => {
+      taskBoxEl.classList.remove('flash-correct');
+      if (streak >= TOTAL_TASKS) {
+        finishGame();
+      } else {
+        state.currentIndex++;
+        renderTask();
+      }
+    }, CORRECT_DELAY_MS);
   } else {
-    gameOver(task, correctText);
+    taskBoxEl.classList.add('flash-wrong');
+    setTimeout(() => {
+      taskBoxEl.classList.remove('flash-wrong');
+      gameOver(task, correctText);
+    }, WRONG_DELAY_MS);
   }
 }
 
@@ -199,11 +260,58 @@ function gameOver(task, correctText) {
   showScreen('error');
 }
 
+function getBestTime() {
+  try {
+    const raw = localStorage.getItem(BEST_TIME_KEY);
+    return raw ? parseInt(raw, 10) : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function setBestTime(ms) {
+  try {
+    localStorage.setItem(BEST_TIME_KEY, String(ms));
+  } catch (err) {
+    // localStorage nicht verfügbar (z. B. privater Modus) – Feature entfällt einfach.
+  }
+}
+
+function spawnConfetti() {
+  const colors = ['#3457d5', '#1e8e5a', '#f5b700', '#e0457b'];
+  confettiContainerEl.innerHTML = '';
+  for (let i = 0; i < 50; i++) {
+    const piece = document.createElement('span');
+    piece.className = 'confetti-piece';
+    piece.style.left = `${Math.random() * 100}%`;
+    piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = `${Math.random() * 0.6}s`;
+    piece.style.animationDuration = `${2 + Math.random()}s`;
+    piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+    confettiContainerEl.appendChild(piece);
+  }
+  setTimeout(() => {
+    confettiContainerEl.innerHTML = '';
+  }, 3500);
+}
+
 function finishGame() {
   const elapsed = Date.now() - state.startTime;
   stopTimer();
   finalTimeEl.textContent = formatElapsed(elapsed);
+
+  const bestTime = getBestTime();
+  if (bestTime === null || elapsed < bestTime) {
+    setBestTime(elapsed);
+    bestTimeNoteEl.textContent = '🏆 Neue Bestzeit!';
+    bestTimeNoteEl.className = 'best-time-note best-time-note--record';
+  } else {
+    bestTimeNoteEl.textContent = `Bestzeit: ${formatElapsed(bestTime)}`;
+    bestTimeNoteEl.className = 'best-time-note';
+  }
+
   showScreen('success');
+  spawnConfetti();
 }
 
 document.getElementById('btn-start').addEventListener('click', startGame);
