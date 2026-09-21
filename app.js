@@ -119,6 +119,31 @@ function setControlsEnabled(enabled) {
   inputAreaEl.classList.toggle('disabled', !enabled);
 }
 
+// Schreibt opt.label in die Kachel; ist eine referenceLabel angegeben (Mehdis
+// Originalzeile bei Typ E), werden abweichende Token hervorgehoben, damit man
+// direkt sieht, welches Vorzeichen geändert wurde statt jede Kachel neu
+// nachrechnen zu müssen.
+function renderOptionLabel(tile, label, referenceLabel) {
+  tile.textContent = '';
+  const tokens = label.split(' ');
+  if (!referenceLabel) {
+    tile.appendChild(document.createTextNode(label));
+    return;
+  }
+  const refTokens = referenceLabel.split(' ');
+  tokens.forEach((token, i) => {
+    if (i > 0) tile.appendChild(document.createTextNode(' '));
+    if (token !== refTokens[i]) {
+      const span = document.createElement('span');
+      span.className = 'diff-token';
+      span.textContent = token;
+      tile.appendChild(span);
+    } else {
+      tile.appendChild(document.createTextNode(token));
+    }
+  });
+}
+
 function renderTask() {
   clearInlineMessage();
   clearPraiseToast();
@@ -158,7 +183,7 @@ function renderTask() {
       const tile = document.createElement('button');
       tile.type = 'button';
       tile.className = 'option-tile';
-      tile.textContent = opt.label;
+      renderOptionLabel(tile, opt.label, task.mistakeLabel);
       tile.dataset.index = String(idx);
       tile.addEventListener('click', () => toggleOption(task, idx, tile));
       container.appendChild(tile);

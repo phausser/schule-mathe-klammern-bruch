@@ -412,14 +412,16 @@ function errNegTimesMinus() {
   const aF = new Fraction(a, 1);
   const bF = new Fraction(b, 1);
   const cF = new Fraction(c, 1);
+  const mistakeLabel = `-${a} · ${b} - ${a} · ${c}`;
   const options = buildCorrectionOptions([
     { label: `-${a} · ${b} + ${a} · ${c}`, value: aF.neg().mul(bF).add(aF.mul(cF)) }, // richtig
-    { label: `-${a} · ${b} - ${a} · ${c}`, value: aF.neg().mul(bF).sub(aF.mul(cF)) }, // Mehdis Fehler
+    { label: mistakeLabel, value: aF.neg().mul(bF).sub(aF.mul(cF)) }, // Mehdis Fehler
     { label: `${a} · ${b} - ${a} · ${c}`, value: aF.mul(bF).sub(aF.mul(cF)) },
     { label: `${a} · ${b} + ${a} · ${c}`, value: aF.mul(bF).add(aF.mul(cF)) },
   ]);
   return {
-    statement: `Mehdi rechnet: -${a} · (${b} - ${c}) = -${a} · ${b} - ${a} · ${c}`,
+    statement: `Mehdi rechnet: -${a} · (${b} - ${c}) = ${mistakeLabel}`,
+    mistakeLabel,
     options,
     hint: `Beim Ausmultiplizieren mit -${a} ändern sich beide Vorzeichen in der Klammer: -${a} · (${b} - ${c}) = -${a} · ${b} + ${a} · ${c}`,
   };
@@ -432,14 +434,16 @@ function errDoubleMinusBracket() {
   const pF = new Fraction(p, 1);
   const qF = new Fraction(q, 1);
   const rF = new Fraction(r, 1);
+  const mistakeLabel = `${p} - ${q} + ${r}`;
   const options = buildCorrectionOptions([
     { label: `${p} + ${q} + ${r}`, value: pF.add(qF).add(rF) }, // richtig
-    { label: `${p} - ${q} + ${r}`, value: pF.sub(qF).add(rF) }, // Mehdis Fehler
+    { label: mistakeLabel, value: pF.sub(qF).add(rF) }, // Mehdis Fehler
     { label: `${p} - ${q} - ${r}`, value: pF.sub(qF).sub(rF) },
     { label: `${p} + ${q} - ${r}`, value: pF.add(qF).sub(rF) },
   ]);
   return {
-    statement: `Mehdi rechnet: ${p} - (-${q} - ${r}) = ${p} - ${q} + ${r}`,
+    statement: `Mehdi rechnet: ${p} - (-${q} - ${r}) = ${mistakeLabel}`,
+    mistakeLabel,
     options,
     hint: `Ein Minus vor der Klammer dreht JEDES Vorzeichen in der Klammer um: ${p} - (-${q} - ${r}) = ${p} + ${q} + ${r}`,
   };
@@ -452,14 +456,16 @@ function errNegTimesPlus() {
   const aF = new Fraction(a, 1);
   const bF = new Fraction(b, 1);
   const cF = new Fraction(c, 1);
+  const mistakeLabel = `-${a} · ${b} + ${a} · ${c}`;
   const options = buildCorrectionOptions([
     { label: `-${a} · ${b} - ${a} · ${c}`, value: aF.neg().mul(bF).sub(aF.mul(cF)) }, // richtig
-    { label: `-${a} · ${b} + ${a} · ${c}`, value: aF.neg().mul(bF).add(aF.mul(cF)) }, // Mehdis Fehler
+    { label: mistakeLabel, value: aF.neg().mul(bF).add(aF.mul(cF)) }, // Mehdis Fehler
     { label: `${a} · ${b} + ${a} · ${c}`, value: aF.mul(bF).add(aF.mul(cF)) },
     { label: `${a} · ${b} - ${a} · ${c}`, value: aF.mul(bF).sub(aF.mul(cF)) },
   ]);
   return {
-    statement: `Mehdi rechnet: -${a} · (${b} + ${c}) = -${a} · ${b} + ${a} · ${c}`,
+    statement: `Mehdi rechnet: -${a} · (${b} + ${c}) = ${mistakeLabel}`,
+    mistakeLabel,
     options,
     hint: `Beim Ausmultiplizieren mit -${a} bleibt das Vorzeichen von + bei + und wird zu -: -${a} · (${b} + ${c}) = -${a} · ${b} - ${a} · ${c}`,
   };
@@ -469,12 +475,13 @@ const TYPE_E_GENERATORS = [errNegTimesMinus, errDoubleMinusBracket, errNegTimesP
 
 function generateTypeE() {
   const gen = choice(TYPE_E_GENERATORS);
-  const { statement, options, hint } = gen();
+  const { statement, mistakeLabel, options, hint } = gen();
   const correctCount = options.filter((o) => o.correct).length;
   if (correctCount !== 1 || options.length < 2) return generateTypeE();
   return {
     kind: 'choice',
     prompt: `Stolperstelle: Welche Fortsetzung korrigiert Mehdis Fehler richtig?\n${statement}`,
+    mistakeLabel,
     options,
     hint,
   };

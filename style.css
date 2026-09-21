@@ -274,6 +274,14 @@ p {
   box-shadow: 0 0 0 3px rgba(79, 93, 245, 0.12);
 }
 
+.diff-token {
+  background: rgba(236, 72, 153, 0.16);
+  color: var(--color-accent);
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 0 3px;
+}
+
 .inline-message {
   font-weight: 600;
   color: var(--color-error);
