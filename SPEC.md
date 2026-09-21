@@ -110,14 +110,15 @@ zufälligen Zahlen neu instanziert).
 
 - `index.html`, `style.css`, `app.js` (+ ggf. `tasks.js` für
   Aufgabengeneratoren, `fraction.js` für Bruchrechnung-Helper).
-- Kein Framework, kein Bundler, keine externen Abhängigkeiten. Läuft
-  direkt per `index.html` im Browser und via GitHub Pages.
+- Kein Framework, kein Bundler, keine JS-Abhängigkeiten. Läuft direkt per
+  `index.html` im Browser und via GitHub Pages.
 - Bruchrechnung: eigene kleine `Fraction`-Klasse/Modul (Addition,
   Subtraktion, Multiplikation, Kürzen via ggT, Vergleich, Formatierung).
-- Responsives, einfaches Design (mobiltauglich), keine externen Fonts/CDNs
-  nötig.
-- Zustand nur im Speicher (kein LocalStorage-Zwang; Reload = Neustart ist
-  ok).
+- Responsives, buntes Design (mobiltauglich): Farbverlauf-Hintergrund,
+  Google Font "Poppins" (mit Systemschrift-Fallback, falls die
+  Foundry/Netzwerk nicht erreichbar ist).
+- Zustand nur im Speicher (kein LocalStorage-Zwang, außer für die lokale
+  Bestzeit); Reload = Neustart der Übung.
 
 ## Nicht im Scope (v1)
 
